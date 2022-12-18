@@ -14,7 +14,6 @@ public class SemiPlugin {
             server.getLogger().severe("## https://github.com/Efnilite/vilib/releases/latest");
             server.getLogger().severe("##");
 
-            server.getPluginManager().disablePlugin(this);
             return false;
         }
         return true;
@@ -29,7 +28,6 @@ public class SemiPlugin {
             server.getLogger().severe("## https://github.com/Efnilite/vilib/releases/latest");
             server.getLogger().severe("##");
 
-            server.getPluginManager().disablePlugin(this);
             return false;
         }
         return true;
