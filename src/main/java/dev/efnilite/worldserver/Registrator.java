@@ -2,7 +2,6 @@ package dev.efnilite.worldserver.commands;
 
 import dev.efnilite.worldserver.util.Util;
 import dev.efnilite.worldserver.config.ConfigValue;
-import dev.efnilite.worldserver.WorldServer;
 
 public class Registrator {
     public void registerAllCommands(WorldServer worldServer) {
