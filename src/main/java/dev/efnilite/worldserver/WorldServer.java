@@ -1,6 +1,7 @@
 package dev.efnilite.worldserver;
 
 import dev.efnilite.vilib.ViPlugin;
+
 import dev.efnilite.vilib.lib.bstats.bukkit.Metrics;
 import dev.efnilite.vilib.lib.bstats.charts.SimplePie;
 import dev.efnilite.vilib.util.Logging;
@@ -9,6 +10,10 @@ import dev.efnilite.vilib.util.Time;
 import dev.efnilite.vilib.util.Version;
 import dev.efnilite.vilib.util.elevator.GitElevator;
 import dev.efnilite.vilib.util.elevator.VersionComparator;
+import dev.efnilite.worldserver.util.VisibilityHandler;
+import dev.efnilite.worldserver.util.VisibilityHandler_v1_13;
+import dev.efnilite.worldserver.util.VisibilityHandler_v1_8;
+import static dev.efnilite.worldserver.util.SemiPlugin.*;
 import dev.efnilite.worldserver.config.ConfigValue;
 import dev.efnilite.worldserver.config.Configuration;
 import dev.efnilite.worldserver.eco.*;
@@ -18,18 +23,15 @@ import dev.efnilite.worldserver.toggleable.GeneralHandler;
 import dev.efnilite.worldserver.toggleable.WorldChatListener;
 import dev.efnilite.worldserver.toggleable.WorldEconomyListener;
 import dev.efnilite.worldserver.toggleable.WorldTabListener;
-import dev.efnilite.worldserver.util.Util;
-import dev.efnilite.worldserver.util.VisibilityHandler;
-import dev.efnilite.worldserver.util.VisibilityHandler_v1_13;
-import dev.efnilite.worldserver.util.VisibilityHandler_v1_8;
+
 import net.milkbowl.vault.economy.Economy;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
+
 import org.jetbrains.annotations.NotNull;
-import static dev.efnilite.worldserver.util.SemiPlugin.*;
 
 import java.io.File;
 
@@ -45,13 +47,13 @@ public class WorldServer extends ViPlugin {
 
     @Override
     public void onLoad() {
-        YamlConfiguration c = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
 
-        if (c.getBoolean("economy-enabled") && getServer().getPluginManager().getPlugin("Vault") != null) {
+        if (config.getBoolean("economy-enabled") && getServer().getPluginManager().getPlugin("Vault") != null) {
             try {
                 Class.forName("net.milkbowl.vault.economy.Economy");
                 getServer().getServicesManager().register(Economy.class, new EconomyProvider(), this, ServicePriority.High);
-                getLogger().info("Registered with Vault!");
+                getLogger().info("Hooked into vault and registered vault successfully!");
             } catch (NoClassDefFoundError | ClassNotFoundException ignored) {
 
             }
@@ -64,20 +66,8 @@ public class WorldServer extends ViPlugin {
 
         // ----- Check vilib -----
 
-        if (checkVilibExisting(getServer())) {
-            // Passed the check for existing vilib in the server.
-        }
-
-        if (!Util.isLatest(REQUIRED_VILIB_VERSION, vilib.getDescription().getVersion())) {
-            getLogger().severe("##");
-            getLogger().severe("## WorldServer requires *a newer version* of vilib to work!");
-            getLogger().severe("##");
-            getLogger().severe("## Please download it here:");
-            getLogger().severe("## https://github.com/Efnilite/vilib/releases/latest");
-            getLogger().severe("##");
-
+        if (!checkVilibExisting(getServer()) || !checkVilibVersion(getServer())) {
             getServer().getPluginManager().disablePlugin(this);
-            return;
         }
 
         // ----- Start time -----
@@ -113,23 +103,9 @@ public class WorldServer extends ViPlugin {
                 Bukkit.getPluginManager().disablePlugin(this);
         }
 
-        registerCommand("worldserver", new WorldServerCommand());
-        if (ConfigValue.ECONOMY_OVERRIDE_BALANCE_COMMAND) {
-            Util.registerToMap("bal", new BalCommand());
-            Util.registerToMap("balance", new BalCommand());
-        }
-        if (ConfigValue.ECONOMY_OVERRIDE_PAY_COMMAND) {
-            Util.registerToMap("pay", new PayCommand());
-            Util.registerToMap("transfer", new PayCommand());
-        }
-        if (ConfigValue.ECONOMY_OVERRIDE_BALTOP_COMMAND) {
-            Util.registerToMap("baltop", new BaltopCommand());
-            Util.registerToMap("balancetop", new BaltopCommand());
-        }
-        registerListener(new GeneralHandler());
-        registerListener(new WorldChatListener());
-        registerListener(new WorldTabListener());
-        registerListener(new WorldEconomyListener());
+        // Register all commands and listeners.
+        Registrator.registerAllCommands(this);
+        Registrator.registerAllListeners(this);
 
         Metrics metrics = new Metrics(this, 13856);
         metrics.addCustomChart(new SimplePie("chat_enabled", () -> Boolean.toString(ConfigValue.CHAT_ENABLED)));
@@ -141,19 +117,18 @@ public class WorldServer extends ViPlugin {
         }
 
         Task.create(this) // save data every 5 minutes
-                .delay(5 * 60 * 20)
-                .repeat(5 * 60 * 20)
-                .execute(() -> {
-                    for (WorldPlayer player : WorldPlayer.getPlayers().values()) {
-                        player.save(true);
-                    }
-                })
-                .run();
+            .delay(5 * 60 * 20)
+            .repeat(5 * 60 * 20)
+            .execute(() -> {
+                for (WorldPlayer player : WorldPlayer.getPlayers().values()) {
+                    player.save(true);
+                }
+            }).run();
 
         Task.create(this) // read existing balance caches
-                .async()
-                .execute(BalCache::read)
-                .run();
+            .async()
+            .execute(BalCache::read)
+            .run();
 
         // Vault setups
         VaultHook.register();
