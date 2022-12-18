@@ -29,6 +29,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 import org.jetbrains.annotations.NotNull;
+import static dev.efnilite.worldserver.util.SemiPlugin.*;
 
 import java.io.File;
 
@@ -63,17 +64,8 @@ public class WorldServer extends ViPlugin {
 
         // ----- Check vilib -----
 
-        Plugin vilib = getServer().getPluginManager().getPlugin("vilib");
-        if (vilib == null || !vilib.isEnabled()) {
-            getLogger().severe("##");
-            getLogger().severe("## WorldServer requires vilib to work!");
-            getLogger().severe("##");
-            getLogger().severe("## Please download it here:");
-            getLogger().severe("## https://github.com/Efnilite/vilib/releases/latest");
-            getLogger().severe("##");
-
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+        if (checkVilibExisting(getServer())) {
+            // Passed the check for existing vilib in the server.
         }
 
         if (!Util.isLatest(REQUIRED_VILIB_VERSION, vilib.getDescription().getVersion())) {
