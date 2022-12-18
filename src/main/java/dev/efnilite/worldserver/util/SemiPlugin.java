@@ -4,7 +4,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.Server;
 
 public class SemiPlugin {
-    public static void checkVilibExisting(Server server) {
+    public static boolean checkVilibExisting(Server server) {
         Plugin vilib = server.getPluginManager().getPlugin("vilib");
         if (vilib == null || !vilib.isEnabled()) {
             server.getLogger().severe("##");
@@ -15,11 +15,12 @@ public class SemiPlugin {
             server.getLogger().severe("##");
 
             server.getPluginManager().disablePlugin(this);
-            return;
+            return false;
         }
+        return true;
     }
     
-    public static void checkVilibVersion(Server server) {
+    public static boolean checkVilibVersion(Server server) {
         if (!Util.isLatest(REQUIRED_VILIB_VERSION, vilib.getDescription().getVersion())) {
             server.getLogger().severe("##");
             server.getLogger().severe("## WorldServer requires *a newer version* of vilib to work!");
@@ -29,7 +30,8 @@ public class SemiPlugin {
             server.getLogger().severe("##");
 
             server.getPluginManager().disablePlugin(this);
-            return;
+            return false;
         }
+        return true;
     }
 }
